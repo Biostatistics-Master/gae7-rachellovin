@@ -1,6 +1,6 @@
 ---
 title: "GAE7"
-author: "Your Name Here"
+author: "Rachel Lovin"
 format: 
   html:
     theme: custom.scss
@@ -44,13 +44,15 @@ options(knitr.kable.NA = '')
 
 ## Methods
 
-Please see @Pintar.etal2018 for greater detail on experimental design and data collection. In brief, the experiment was set up as a 3 X 3 factorial treatment design (9 treatment combinations). The experiment was replicated in 3 separate locations at 3 different times for a total of 9 replicates. This should have resulted in 81 observations total, however some fish died during the experiment rendering those observations not being included in the data resulting in only 69 observations.
+Please see @Pintar.etal2018 for greater detail on experimental design and data collection. In brief, the experiment was set up as a 3 X 3 factorial treatment design (9 treatment combinations). The experiment was replicated in 3 separate locations at 3 different times for a total of 9 replicates. This should have resulted in 81 observations total, however some fish died during the experiment rendering those observations not being included in the data resulting in only 69 observations. The first six observations are shown below (@tbl-dataImport).
 
 ```{r }
-#| label: dataImport
+#| label: tbl-dataImport
+#| tbl-cap: "First 6 observations of the data provided by @Pintar.etal2018."
 
 df1 <- read_csv("Pintar_etal_2018.csv",
                 show_col_types = FALSE)
+
 
 # Block = 1 to 9 for the 9 spatiotemporal blocks (3 locations X 3 times)
 # Pool = 1 to 9 for the plastic wading pools used for the experiment
@@ -76,10 +78,201 @@ df1$Fish <- factor(df1$Fish,
 
 df1$Block <- factor(df1$Block)
 
+kbl(
+  head(df1),
+  col.names = c(
+    "Block",
+    "Pool",
+    "Location",
+    "Time",
+    "Nutrient",
+    "Fish",
+    "Culex Egg Rafts",
+    "Hydrophilidae",
+    "Dytiscidae"
+  )
+) |>
+  kable_classic(
+    full = FALSE
+  )
+
 ```
 
 ### Statistical Methods
 
+We used the data from @Pintar.etal2018. The independent variables were nutrient availability and predation density. The response variable was the density of either *Culex* egg rafts, or Hydrophilidae or Dytiscidae beetles. The blocks were the nine different treatment combinations. The data were analyzed with the blocks as fixed (model 1)
+
+$$
+y_{ij} = \mu + \alpha_i + \beta_j + \epsilon_{ij}
+$$
+
+and random (model 2).
+
+$$
+y_{ij} = \mu + \alpha_i + B_j + \epsilon_{ij}
+$$
+
+An ANOVA was run for each of the three groups (*Culex*, Hydrophilidae, and Dytiscidae).
+
+```{r}
+
+#| label: anova-culex
+
+CulexFactorial <- lmer(Culex_Egg_Rafts ~ Nutrient*Fish + (1|Block), data=df1)
+
+
+CulexAnova <- anova(CulexFactorial)
+
+
+```
+
+```{r}
+#| label: anova-hydro
+
+HydroFactorial <- lmer(Hydrophilidae ~ Fish*Nutrient + (1|Block), df1)
+
+HydroAnova <- anova(HydroFactorial)
+
+```
+
+```{r}
+#| label: anova-dy
+
+DyFactorial <- lmer(Dytiscidae ~ Fish*Nutrient + (1|Block), df1)
+
+DyAnova <- anova(DyFactorial)
+
+
+```
+
 ## Results
+
+For *Culex*, in the fixed effect ANOVA the differences between nutrient levels and fish levels were statistically significant, while the interaction between them was not (@tbl-Culex-1). In the random effect ANOVA, the model without random component was better fitting according to the AIC (@tbl-Culex-2).
+
+For Hydrophilidae, in the fixed effect ANOVA the differences between fish levels were statistically significant, while the other two metrics were not (@tbl-Hydrophilidae-1). In the random effect ANOVA, the model without the random component was better fitting according to the AIC (@tbl-Hydrophilidae-2).
+
+For Dytiscidae, in the fixed effect ANOVA the differences between nutrient levels and fish levels were statistically significant, while the interaction between them was not (@tbl-Dytiscidae-1). In the random effect ANOVA, the the model without the random component was better fitting according to the AIC (@tbl-Dytiscidae-2).
+
+Overall the analysis shows that for *Culex,* the number of egg rafts was affected by both predation and nutrient density but not the interaction between them. For Hydrophilidae, the number of beetles was affected by predation but not nutrient density or the interaction between them. For Dytiscidae, the number of beetles was affected by predation and nutrient density but not the interaction between them. The addition of a random component did not produce a better fitting model for any of the three groups, indicating that the fixed effect ANOVA is the better way to analyze our data.
+
+```{r}
+#| label: tbl-Culex
+#| tbl-cap: "Linear mixed-effect model results for the data provided by @Pintar.etal2018 for Culex"
+#| tbl-subcap: 
+#|     - "Fixed effect."
+#|     - "Random effect."
+#| layout-nrows: 2
+kbl(
+  CulexAnova,
+ col.names = c(
+   "SS",
+   "MS",
+   "df1",
+   "df2",
+   "F",
+   "P"
+    ),
+  digits = c(3,3,0,0,3,4)
+  ) |>
+  kable_classic()
+
+
+kbl(
+  rand(CulexFactorial),
+  col.names = c(
+    "Parameters",
+    "log-likelihood",
+    "AIC",
+    "LRT",
+    "df",
+    "P"
+    ),
+  digits = c(0,3,3,3,0,4)
+  ) |>
+  kable_classic()
+
+
+```
+
+```{r}
+#| label: tbl-Hydrophilidae
+#| tbl-cap: "Linear mixed-effect model results for the data provided by @Pintar.etal2018 for Hydrophilidae"
+#| tbl-subcap: 
+#|     - "Fixed effect."
+#|     - "Random effect."
+#| layout-nrows: 2
+
+kbl(
+  HydroAnova,
+  col.names = c(
+    "SS",
+    "MS",
+    "df1",
+    "df2",
+    "F",
+    "P"
+    ),
+  digits = c(3,3,0,0,3,4)
+  ) |>
+  kable_classic()
+
+#| label: tbl-Hydro2
+#| tbl-cap: "and b) random effect"
+
+
+kbl(
+  rand(HydroFactorial),
+  col.names = c(
+    "Parameters",
+    "log-likelihood",
+    "AIC",
+    "LRT",
+    "df",
+    "P"
+    ),
+  digits = c(0,3,3,3,0,4)
+  ) |>
+  kable_classic()
+
+```
+
+```{r}
+#| label: tbl-Dytiscidae
+#| tbl-cap: "Linear mixed-effect model results for the data provided by @Pintar.etal2018 for Dytiscidae"
+#| tbl-subcap: 
+#|     - "Fixed effect."
+#|     - "Random effect."
+#| layout-nrows: 2
+
+kbl(
+  DyAnova,
+  col.names = c(
+   "SS",
+   "MS",
+   "df1",
+   "df2",
+    "F",
+    "P"
+    ),
+  digits = c(3,3,0,0,3,4)
+  ) |>
+  kable_classic()
+#| label: tbl-Dy2
+#| tbl-cap: "and b) random effect" 
+
+kbl(
+  rand(DyFactorial),
+  col.names = c(
+    "Parameters",
+    "log-likelihood",
+    "AIC",
+    "LRT",
+    "df",
+    "P"
+    ),
+  digits = c(0,3,3,3,0,4)
+  ) |>
+  kable_classic()
+```
 
 ## References
